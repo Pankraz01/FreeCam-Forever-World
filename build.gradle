@@ -1,0 +1,254 @@
+import net.fabricmc.loom.task.RemapJarTask
+import net.xolt.freecam.gradle.BumpVersionTask
+import org.jetbrains.changelog.Changelog
+import org.jetbrains.changelog.tasks.BaseChangelogTask
+
+plugins {
+    id "architectury-plugin" version "3.4-SNAPSHOT"
+    id "dev.architectury.loom" version "1.11-SNAPSHOT" apply false
+    id "com.hypherionmc.modutils.modpublisher" version "2.1.7+snapshot.0" apply false
+    id "com.github.johnrengelman.shadow" version "8.1.1" apply false
+    id "org.jetbrains.changelog" version "2.2.0"
+}
+
+tasks.named('wrapper') {
+    // Use "all" so we get sources and javadoc too
+    distributionType = "all"
+    gradleVersion = "8.11"
+}
+
+// Helper task that bumps the version number
+tasks.register("bumpVersion", BumpVersionTask) {
+    group = "version"
+    input = file("gradle.properties")
+    key = "mod_version"
+}
+
+// Move the changelog tasks to the "version" group
+tasks.withType(BaseChangelogTask).configureEach {
+    group = "version"
+}
+
+// Don't need these on the root project
+afterEvaluate {
+    tasks.jar.enabled = false
+    tasks.sourcesJar.enabled = false
+}
+
+architectury {
+    minecraft = rootProject.minecraft_version
+}
+
+changelog {
+    // Use the mod_version in gradle.properties as the release version/tag.
+    // Build tag/diff links using the github repo URL.
+    version = project.mod_version
+    repositoryUrl = project.source_code_url
+
+    // Title & intro are printed right at the start of the changelog.
+    // The values here will replace whatever exists in the file when patching.
+    title = "Changelog"
+    introduction = """
+        All notable changes to this project will be documented in this file.
+        
+        This file is formatted as per [Keep a Changelog](https://keepachangelog.com/en/1.0.0),
+        and Freecam's versioning is based on [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+        """.stripIndent()
+
+    // Group sub-headings added to the "unreleased" section when patching the changelog.
+    // Other sub-headings can still be added manually, if required.
+    groups = [
+            "Added",
+            "Changed",
+            "Removed",
+            "Fixed",
+    ]
+
+    // Regex used to find versions in headings.
+    // The default regex only supports semantic versions, this one is more lenient.
+    headerParserRegex = ~/(\d+(?:\.\d+)+(?:-[-a-z]+\d*)?)/
+}
+
+allprojects {
+    apply plugin: "java"
+    apply plugin: "architectury-plugin"
+    apply plugin: "maven-publish"
+
+    version = "${project.mod_version}+mc${project.minecraft_version}"
+    group = rootProject.maven_group
+    base {
+        // Format archive names, e.g. 'freecam-fabric-1.2.3+mc1.20.4.jar'
+        archivesName = rootProject.name + project.path.replaceAll(':', '-')
+    }
+
+    repositories {
+        // Add repositories to retrieve artifacts from in here.
+        // You should only use this when depending on other mods because
+        // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
+        // See https://docs.gradle.org/current/userguide/declaring_repositories.html
+        // for more information about repositories.
+        mavenCentral()
+        maven { url "https://maven.parchmentmc.org/" }
+        maven { url "https://maven.neoforged.net/releases/" }
+        if (rootProject.neoforge_pr != "") {
+            maven {
+                url "https://prmaven.neoforged.net/NeoForge/pr${rootProject.neoforge_pr}"
+                content { includeModule("net.neoforged", "neoforge") }
+            }
+        }
+        maven { url "https://maven.shedaniel.me/" }
+        maven { url "https://maven.terraformersmc.com/" }
+    }
+
+    def javaVersion = 21
+    def javaLanguageVersion = JavaLanguageVersion.of(javaVersion)
+
+    // ensure that the encoding is set to UTF-8, no matter what the system default is
+    // this fixes some edge cases with special characters not displaying correctly
+    // see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = "UTF-8"
+        options.release = javaVersion
+    }
+
+    tasks.withType(JavaExec).configureEach {
+        javaLauncher.set(javaToolchains.launcherFor {
+            languageVersion = javaLanguageVersion
+        })
+    }
+
+    java {
+        toolchain {
+            languageVersion = javaLanguageVersion
+        }
+        withSourcesJar()
+    }
+
+    jar {
+        from "LICENSE"
+    }
+}
+
+subprojects {
+    apply plugin: "dev.architectury.loom"
+
+    loom {
+        accessWidenerPath = project(":common").file "src/main/resources/freecam.accesswidener"
+
+        runs {
+            client {
+                // Pretty run-config name
+                // Note: we can't disable the (:path) suffix
+                // https://github.com/architectury/architectury-loom/blob/5b3e7c72b665f7eb38c23ceb677027acdc867398/src/main/java/net/fabricmc/loom/configuration/ide/RunConfig.java#L117
+                configName "Run"
+            }
+            remove server // We only need client runs
+        }
+
+        silentMojangMappingsLicense()
+    }
+
+    dependencies {
+        def parchmentAppendix = rootProject.parchment_version.split('-')[0]
+        def parchmentVersion = rootProject.parchment_version.split('-')[1]
+
+        minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+        mappings loom.layered() {
+            officialMojangMappings()
+            parchment("org.parchmentmc.data:parchment-${parchmentAppendix}:${parchmentVersion}@zip")
+        }
+    }
+
+    if (rootProject.enabled_platforms.split(',').contains project.name) {
+        apply plugin: "com.hypherionmc.modutils.modpublisher"
+
+        // Ensure this task exists, since we need to publish its output
+        tasks.maybeCreate("remapModrinthJar", RemapJarTask)
+
+        publisher {
+            curseID = "557076"
+            modrinthID = "XeEZ3fK2"
+
+            github {
+                // Extract our repo slug from the github URL
+                repo = rootProject.source_code_url.replaceFirst("^https?://github\\.com/", "")
+                // GitHub releases must be associated with a git tag
+                // We want this to be the canonical tag, not the annotated build tag
+                tag = "v${rootProject.mod_version}"
+                // Create a draft release, so that GitHub doesn't actually create the tag
+                // does not affect already published releases
+                draft = true
+            }
+
+            // Format display name, e.g. "1.2.4 for MC 1.20.4 (fabric)"
+            displayName = "${rootProject.mod_version} for MC ${rootProject.minecraft_version} (${project.name})"
+            version = project.version
+            versionType = rootProject.release_type
+            curseEnvironment = "client"
+            loaders = [ project.name ]
+            javaVersions = [ project.java.targetCompatibility ]
+
+            // Get the changelog entry using the changelog plugin
+            changelog = provider {
+                def plugin = rootProject.changelog
+                def version = rootProject.mod_version
+                if (!plugin.has(version)) {
+                    logger.warn "No changelog for \"${version}\". Using \"unreleased\" instead."
+                }
+
+                def logEntry = (plugin.getOrNull(version) ?: plugin.getUnreleased())
+                        .withHeader(false)
+                        .withLinks(false)
+                        .withEmptySections(false)
+                        .withSummary(true)
+
+                return plugin.renderItem(logEntry, Changelog.OutputType.MARKDOWN)
+            }
+
+            // List the current `minecraft_version`, everything in `supported_mc_versions`, &
+            // everything in the current mod loader's `*_supported_mc_versions` as a supported version
+            gameVersions = provider {
+                String prop = "supported_mc_versions"
+                String primary = rootProject.property("minecraft_version")
+                String common = rootProject.findProperty(prop) ?: ""
+                String specific = rootProject.findProperty("${project.name}_${prop}") ?: ""
+
+                return (common.split(",") + specific.split(",") + [ primary ])
+                        .findAll { it != null }
+                        .findAll { it != "" }
+                        .collect { it.trim() }
+                        .unique()
+            }
+
+            artifact = tasks.remapJar
+            //setPlatformArtifact "modrinth", tasks.remapModrinthJar
+
+            [ curseDepends, modrinthDepends ].each {
+                it.embedded "cloth-config"
+            }
+
+            def ci = System.getenv("CI") != null
+            def dummy = ci ? "" : "default"
+            apiKeys {
+                github findProperty("github_token") ?: System.getenv("GITHUB_TOKEN") ?: System.getenv("GH_TOKEN") ?: dummy
+                curseforge findProperty("curseforge_token") ?: System.getenv("CURSEFORGE_TOKEN") ?: dummy
+                modrinth findProperty("modrinth_token") ?: System.getenv("MODRINTH_TOKEN") ?: dummy
+            }
+            debug = !ci
+        }
+
+        tasks.publish.dependsOn tasks.publishMod
+    }
+
+    publishing {
+        repositories {
+            mavenLocal()
+        }
+
+        publications {
+            maven(MavenPublication) {
+                from components.java
+            }
+        }
+    }
+}
