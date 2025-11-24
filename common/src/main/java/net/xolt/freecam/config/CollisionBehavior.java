@@ -29,7 +29,22 @@ public class CollisionBehavior {
 
     @SuppressWarnings("RedundantIfStatement")
     public static boolean isIgnored(Block block) {
-        // Collisions are enforced unconditionally. Never ignore any block for collision checks.
+        if (ModConfig.INSTANCE.collision.ignoreAll && BuildVariant.getInstance().cheatsPermitted()) {
+            return true;
+        }
+
+        if (ModConfig.INSTANCE.collision.ignoreTransparent && transparent.test(block)) {
+            return true;
+        }
+
+        if (ModConfig.INSTANCE.collision.ignoreOpenable && openable.test(block)) {
+            return true;
+        }
+
+        if (ModConfig.INSTANCE.collision.ignoreCustom && custom.test(block)) {
+            return true;
+        }
+
         return false;
     }
 
