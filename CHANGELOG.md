@@ -15,65 +15,6 @@ and Freecam's versioning is based on [Semantic Versioning](https://semver.org/sp
 
 ### Fixed
 
-## [1.3.5] - 2025-10-10
-
-### Added
-
-- 1.21.10 Support
-- Various translation updates
-
-### Fixed
-
-- [Iris](https://github.com/IrisShaders/Iris) compatibility for "Show Hand" and "Show Player" ([294](https://github.com/MinecraftFreecam/Freecam/pull/294))
-- "Full brightness" rendering incorrectly on MacOS X ([300](https://github.com/MinecraftFreecam/Freecam/pull/300))
-- Crash loading the mod on a dedicated server ([293](https://github.com/MinecraftFreecam/Freecam/pull/293))
-
-## [1.3.4] - 2025-06-25
-
-### Added
-
-- 1.21.6 Support ([286](https://github.com/MinecraftFreecam/Freecam/pull/286))
-- Persian translations
-
-### Changed
-
-- Various translation updates
-
-## [1.3.3] - 2025-03-26
-
-### Added
-
-- 1.21.5 Support ([273](https://github.com/MinecraftFreecam/Freecam/pull/273))
-
-### Changed
-
-- Various translation updates
-
-## [1.3.2] - 2024-12-07
-
-### Added
-
-- 1.21.4 Support ([262](https://github.com/MinecraftFreecam/Freecam/pull/262)).
-- Portuguese translations
-
-### Changed
-
-- Various translation updates
-
-## [1.3.1] - 2024-11-03
-
-### Added
-
-- 1.21.3 Support ([#252](https://github.com/MinecraftFreecam/Freecam/pull/252)).
-
-## [1.3.0] - 2024-07-27
-
-### Fixed
-
-- Config is now initialized before config screen is registered (fixes [#234](https://github.com/MinecraftFreecam/Freecam/issues/234))
-- Build against NeoForge 21.0.139-beta (fixes opening config screen through Forge modlist crashing)
-- Pumpkin overlay rendering while Freecam is enabled ([#239](https://github.com/MinecraftFreecam/Freecam/issues/239))
-
 ## [1.3.0-beta1] - 2024-06-13
 
 ### Added
@@ -600,13 +541,7 @@ and Freecam's versioning is based on [Semantic Versioning](https://semver.org/sp
 - Minecraft 1.18 support.
 - Minecraft 1.17 support.
 
-[Unreleased]: https://github.com/MinecraftFreecam/Freecam/compare/v1.3.5...HEAD
-[1.3.5]: https://github.com/MinecraftFreecam/Freecam/compare/v1.3.4...v1.3.5
-[1.3.4]: https://github.com/MinecraftFreecam/Freecam/compare/v1.3.3...v1.3.4
-[1.3.3]: https://github.com/MinecraftFreecam/Freecam/compare/v1.3.2...v1.3.3
-[1.3.2]: https://github.com/MinecraftFreecam/Freecam/compare/v1.3.1...v1.3.2
-[1.3.1]: https://github.com/MinecraftFreecam/Freecam/compare/v1.3.0...v1.3.1
-[1.3.0]: https://github.com/MinecraftFreecam/Freecam/compare/v1.3.0-beta1...v1.3.0
+[Unreleased]: https://github.com/MinecraftFreecam/Freecam/compare/v1.3.0-beta1...HEAD
 [1.3.0-beta1]: https://github.com/MinecraftFreecam/Freecam/compare/v1.2.4...v1.3.0-beta1
 [1.2.4]: https://github.com/MinecraftFreecam/Freecam/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/MinecraftFreecam/Freecam/compare/v1.2.2...v1.2.3

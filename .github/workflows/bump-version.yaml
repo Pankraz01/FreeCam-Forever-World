@@ -1,5 +1,4 @@
-name: Bump version
-run-name: Bump ${{ inputs.bump }} version
+name: Bump project version
 
 on:
   workflow_dispatch:
@@ -33,24 +32,16 @@ env:
   replace_key_whitespace: 's/^\s*\([^=#][^=]*\)\s*=\s*/\1=/p'
 
 jobs:
-  bump:
+  bump_version:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          # Set git's auth to use the owner's Personal Access Token:
-          # We need to commit as a user to ensure CI is run on the commit
-          # We need to push as an admin/owner to bypass branch-protection
-          # TODO: use a GitHub App token and a ruleset with explicit bypassers
-          token: ${{ secrets.HASHALITE_PAT }}
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: microsoft
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
@@ -72,6 +63,9 @@ jobs:
         id: commit
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
+          # We need to commit as a user to ensure CI is run on the commit
+          # We need to push as an admin/owner to bypass branch-protection
+          token: ${{ secrets.HASHALITE_PAT }}
           # Ensure we commit as a bot, since we can't reliably get an author slug from `github.actor`
           commit_user_name: github-actions[bot]
           commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
@@ -80,20 +74,21 @@ jobs:
           commit_message: Bump version to ${{ steps.new_props.outputs.mod_version }}
 
       - name: Summarize
-        env:
-          version: ${{ steps.new_props.outputs.mod_version }}
-          old: ${{ steps.old_props.outputs.mod_version }}
-          sha: ${{ steps.commit.outputs.commit_hash }}
-          url: ${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.commit.outputs.commit_hash }}
         run: |
-          {
-            echo "## Summary"
-            echo "Version was bumped from \`$old\` to \`$version\`."
-            echo
-            if [[ -z "$sha" ]]; then
-              echo "**Error**: Nothing to commit!"
-            else
-              echo "[\`${sha:0:6}\`]($url) pushed to \`${{ github.ref_name }}\`."
-            fi
-            echo
-          } >>"$GITHUB_STEP_SUMMARY"
+          version="${{ steps.new_props.outputs.mod_version }}"
+          old="${{ steps.old_props.outputs.mod_version }}"
+          sha="${{ steps.commit.outputs.commit_hash }}"
+          url="${{ github.server_url }}/${{ github.repository }}/commit/$sha"
+          
+          echo "## Summary" >> $GITHUB_STEP_SUMMARY
+          echo "Version was bumped from \`$old\` to \`$version\`." >> $GITHUB_STEP_SUMMARY
+          echo >> $GITHUB_STEP_SUMMARY
+          
+          if [[ -z "$sha" ]]; then
+            echo "**Error**: Nothing to commit!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "[\`${sha:0:6}\`]($url) pushed to \`${{ github.ref_name }}\`." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo >> $GITHUB_STEP_SUMMARY
+          

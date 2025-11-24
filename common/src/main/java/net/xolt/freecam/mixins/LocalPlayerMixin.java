@@ -11,7 +11,6 @@ import static net.xolt.freecam.Freecam.MC;
 import net.minecraft.client.player.LocalPlayer;
 
 @Mixin(LocalPlayer.class)
-@SuppressWarnings("EqualsBetweenInconvertibleTypes")
 public class LocalPlayerMixin {
 
     // Needed for Baritone compatibility.

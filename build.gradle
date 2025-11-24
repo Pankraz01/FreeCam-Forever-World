@@ -5,8 +5,8 @@ import org.jetbrains.changelog.tasks.BaseChangelogTask
 
 plugins {
     id "architectury-plugin" version "3.4-SNAPSHOT"
-    id "dev.architectury.loom" version "1.11-SNAPSHOT" apply false
-    id "com.hypherionmc.modutils.modpublisher" version "2.1.7+snapshot.0" apply false
+    id "dev.architectury.loom" version "1.6-SNAPSHOT" apply false
+    id "com.hypherionmc.modutils.modpublisher" version "2.1.2" apply false
     id "com.github.johnrengelman.shadow" version "8.1.1" apply false
     id "org.jetbrains.changelog" version "2.2.0"
 }
@@ -14,7 +14,7 @@ plugins {
 tasks.named('wrapper') {
     // Use "all" so we get sources and javadoc too
     distributionType = "all"
-    gradleVersion = "8.11"
+    gradleVersion = "8.6"
 }
 
 // Helper task that bumps the version number
@@ -66,7 +66,7 @@ changelog {
 
     // Regex used to find versions in headings.
     // The default regex only supports semantic versions, this one is more lenient.
-    headerParserRegex = ~/(\d+(?:\.\d+)+(?:-[-a-z]+\d*)?)/
+    headerParserRegex = ~/(\d+(?:\.\d+)+)/
 }
 
 allprojects {
@@ -80,6 +80,9 @@ allprojects {
         // Format archive names, e.g. 'freecam-fabric-1.2.3+mc1.20.4.jar'
         archivesName = rootProject.name + project.path.replaceAll(':', '-')
     }
+
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 
     repositories {
         // Add repositories to retrieve artifacts from in here.
@@ -100,27 +103,15 @@ allprojects {
         maven { url "https://maven.terraformersmc.com/" }
     }
 
-    def javaVersion = 21
-    def javaLanguageVersion = JavaLanguageVersion.of(javaVersion)
-
     // ensure that the encoding is set to UTF-8, no matter what the system default is
     // this fixes some edge cases with special characters not displaying correctly
     // see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
-    tasks.withType(JavaCompile).configureEach {
+    tasks.withType(JavaCompile) {
         options.encoding = "UTF-8"
-        options.release = javaVersion
-    }
-
-    tasks.withType(JavaExec).configureEach {
-        javaLauncher.set(javaToolchains.launcherFor {
-            languageVersion = javaLanguageVersion
-        })
+        options.release = 21
     }
 
     java {
-        toolchain {
-            languageVersion = javaLanguageVersion
-        }
         withSourcesJar()
     }
 
@@ -221,7 +212,7 @@ subprojects {
             }
 
             artifact = tasks.remapJar
-            //setPlatformArtifact "modrinth", tasks.remapModrinthJar
+            setPlatformArtifact "modrinth", tasks.remapModrinthJar
 
             [ curseDepends, modrinthDepends ].each {
                 it.embedded "cloth-config"
@@ -238,17 +229,5 @@ subprojects {
         }
 
         tasks.publish.dependsOn tasks.publishMod
-    }
-
-    publishing {
-        repositories {
-            mavenLocal()
-        }
-
-        publications {
-            maven(MavenPublication) {
-                from components.java
-            }
-        }
     }
 }

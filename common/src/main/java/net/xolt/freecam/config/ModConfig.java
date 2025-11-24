@@ -83,13 +83,12 @@ public class ModConfig implements ConfigData {
             public List<String> patterns = new ArrayList<>();
         }
 
-        @VariantTooltip(variant = "normal", count = 2)
-        @VariantTooltip(variant = "modrinth", count = 3)
-        // Default to true, when not running a modrinth build
-        public boolean ignoreAll = !BuildVariant.getInstance().name().equals("modrinth");
+        // Never allow disabling all collisions by default.
+        public boolean ignoreAll = false;
 
         @ConfigEntry.Gui.Tooltip(count = 2)
-        public boolean alwaysCheck = false;
+        // Always check collisions when Freecam is active.
+        public boolean alwaysCheck = true;
     }
 
     @ConfigEntry.Gui.Tooltip

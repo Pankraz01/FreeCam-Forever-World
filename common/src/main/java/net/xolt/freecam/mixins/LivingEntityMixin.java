@@ -15,7 +15,6 @@ import static net.xolt.freecam.config.ModConfig.FlightMode.CREATIVE;
 import net.minecraft.world.entity.LivingEntity;
 
 @Mixin(LivingEntity.class)
-@SuppressWarnings("EqualsBetweenInconvertibleTypes")
 public abstract class LivingEntityMixin {
 
     @Shadow public abstract float getHealth();
